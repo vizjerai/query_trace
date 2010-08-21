@@ -30,11 +30,6 @@ module QueryTrace
         alias_method :log, :log_with_trace
       end
     end
-    klass.class_eval %(
-      def row_even
-        @@row_even
-      end
-    )
   end
 
   def log_with_trace(sql, name, &block)
@@ -51,12 +46,8 @@ module QueryTrace
   end
 
   def format_trace(trace)
-    if (defined?(Rails::LogSubscriber) ? Rails::LogSubscriber : ActiveRecord::Base).colorize_logging
-      if row_even
-        message_color = "35;2"
-      else
-        message_color = "36;2"
-      end
+    if (defined?(ActiveRecord::LogSubscriber) ? ActiveRecord::LogSubscriber : ActiveRecord::Base).colorize_logging
+      message_color = "35;2"
       trace.collect{|t| "    \e[#{message_color}m#{t}\e[0m"}.join("\n")
     else
       trace.join("\n    ")
