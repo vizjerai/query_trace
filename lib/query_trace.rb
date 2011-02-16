@@ -1,4 +1,27 @@
 module QueryTrace
+  mattr_accessor :depth
+  self.depth = 20
+  
+  def self.enabled?
+    defined?(@@trace_queries) && @@trace_queries
+  end
+     
+  def self.enable!
+    ::ActiveRecord::ConnectionAdapters::AbstractAdapter.send(:include, QueryTrace) unless defined?(@@trace_queries)
+    @@trace_queries = true
+  end
+  
+  def self.disable!
+    @@trace_queries = false
+  end
+
+  # Toggles query tracing on and off and returns a boolean indicating the new
+  # state of query tracing (true for enabled, false for disabled).
+  def self.toggle!
+    enabled? ? disable! : enable!
+    enabled?
+  end
+  
   def self.append_features(klass)
     super
     klass.class_eval do
@@ -16,12 +39,13 @@ module QueryTrace
   
   def log_info_with_trace(sql, name, runtime)
     log_info_without_trace(sql, name, runtime)
+
+    return unless @@trace_queries
     
     return unless @logger and @logger.debug?
     return if / Columns$/ =~ name
 
-    trace = clean_trace(caller[2..-1])
-    @logger.debug(format_trace(trace))
+    @logger.debug(format_trace(Rails.backtrace_cleaner.clean(caller)[0..self.depth]))
   end
   
   def format_trace(trace)
@@ -36,10 +60,12 @@ module QueryTrace
       trace.join("\n    ")
     end
   end
-  
+
   def clean_trace(trace)
     Rails.respond_to?(:backtrace_cleaner) ?
       Rails.backtrace_cleaner.clean(trace) :
       trace
   end
 end
+
+QueryTrace.enable! if ENV["QUERY_TRACE"]
