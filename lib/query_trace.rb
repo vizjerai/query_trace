@@ -54,11 +54,6 @@ module QueryTrace
     end
   end
 
-  def clean_trace(trace)
-    Rails.respond_to?(:backtrace_cleaner) ?
-      Rails.backtrace_cleaner.clean(trace) :
-      trace
-  end
 end
 
 QueryTrace.enable! if ENV["QUERY_TRACE"]
