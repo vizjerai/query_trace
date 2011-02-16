@@ -2,7 +2,7 @@ require 'rubygems'
 require 'rake/gempackagetask'
 
 GEM_NAME = "vizjerai-query_trace"
-GEM_VERSION = "0.2.1"
+GEM_VERSION = "0.2.2"
 AUTHORS = ["Nathaniel Talbott", "Mike Gunderloy", "Andrew Assarattanakul"]
 EMAIL = "nathaniel@terralien.com"
 HOMEPAGE = "http://github.com/vizjerai/query_trace"
