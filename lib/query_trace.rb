@@ -25,36 +25,29 @@ module QueryTrace
   def self.append_features(klass)
     super
     klass.class_eval do
-      unless method_defined?(:log_info_without_trace)
-        alias_method :log_info_without_trace, :log_info
-        alias_method :log_info, :log_info_with_trace
+      unless method_defined?(:log_without_trace)
+        alias_method :log_without_trace, :log
+        alias_method :log, :log_with_trace
       end
     end
-    klass.class_eval %(
-      def row_even
-        @@row_even
-      end
-    )
   end
-  
-  def log_info_with_trace(sql, name, runtime)
-    log_info_without_trace(sql, name, runtime)
 
-    return unless @@trace_queries
-    
-    return unless @logger and @logger.debug?
-    return if / Columns$/ =~ name
+  def log_with_trace(sql, name, &block)
+    result = log_without_trace(sql, name, &block)
 
-    @logger.debug(format_trace(Rails.backtrace_cleaner.clean(caller)[0..self.depth]))
+    return result unless @@trace_queries
+
+    return result unless ActiveRecord::Base.logger and ActiveRecord::Base.logger.debug?
+    return result if / Columns$/ =~ name
+
+    ActiveRecord::Base.logger.debug(format_trace(Rails.backtrace_cleaner.clean(caller)[0..self.depth]))
+
+    result 
   end
-  
+
   def format_trace(trace)
-    if ActiveRecord::Base.colorize_logging
-      if row_even
-        message_color = "35;2"
-      else
-        message_color = "36;2"
-      end
+    if (defined?(ActiveRecord::LogSubscriber) ? ActiveRecord::LogSubscriber : ActiveRecord::Base).colorize_logging
+      message_color = "35;2"
       trace.collect{|t| "    \e[#{message_color}m#{t}\e[0m"}.join("\n")
     else
       trace.join("\n    ")
